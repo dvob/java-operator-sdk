@@ -161,6 +161,13 @@ public class InformerEventSource<R extends HasMetadata, P extends HasMetadata>
       log.debug(
           "Propagating event for {}, resource with same version not result of a reconciliation.",
           action);
+      // On update, propagate for old object first so that secondaryToPrimaryMapper
+      // notifies primaries that were referenced by the old state but not the new.
+      // This matches controller-runtime's behavior. See
+      // https://github.com/kubernetes-sigs/controller-runtime/blob/346f1930fde577d7d5e49c88e5ee625e4ebb7daa/pkg/handler/enqueue_mapped.go#L108
+      if (oldObject != null) {
+        propagateEvent(oldObject);
+      }
       propagateEvent(newObject);
     } else {
       log.debug("Event filtered out for operation: {}, resourceID: {}", action, resourceID);
